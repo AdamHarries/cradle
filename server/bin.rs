@@ -1,108 +1,104 @@
 use libcradle::protocol;
 
-use std::sync::{Arc, Mutex};
 use axum::{
     extract::State,
-    routing::{get, post},
     http::StatusCode,
     response::IntoResponse,
+    routing::{get, post},
     Json, Router,
 };
-use tracing;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::sync::{Arc, Mutex};
+use tracing;
 
-struct ServerState {
+struct ProtocolServer {
     name: String,
     songs: Vec<String>,
+    audio_server: Arc<Mutex<AudioServer>>,
 }
 
-impl ServerState {
-    pub fn new(name: String) -> ServerState {
-        ServerState {
-            name: name, 
+impl ProtocolServer {
+    pub fn new(name: String, audio_server: Arc<Mutex<AudioServer>>) -> ProtocolServer {
+        ProtocolServer {
+            name: name,
             songs: vec![],
+            audio_server: audio_server,
         }
     }
-    pub fn enqueue(&mut self, payload: Json<protocol::Enqueue>) -> impl IntoResponse {
+    pub fn enqueue(&mut self, payload: protocol::Enqueue) -> protocol::EnqueueResponse {
+        println!("Got song: {:?}", &payload.filepath);
         tracing::debug!("Got enqueue POST");
-        tracing::debug!("Got song: {:?}", &payload.0.filepath);
-        self.songs.push(payload.0.filepath);
-        
-        let resp = protocol::EnqueueResponse {
-            success: true,
-        };
-        (StatusCode::OK, Json(resp))
+        tracing::debug!("Got song: {:?}", &payload.filepath);
+        self.songs.push(payload.filepath);
+
+        protocol::EnqueueResponse { success: true }
     }
 }
-
 
 async fn enqueue(
     payload: Json<protocol::Enqueue>,
-    state: Arc<Mutex<ServerState>>
+    state: Arc<Mutex<ProtocolServer>>,
 ) -> impl IntoResponse {
     let mut s = state.lock().unwrap();
-    s.enqueue(payload)
+    let result = s.enqueue(payload.0);
+    (StatusCode::OK, Json(result))
 }
 
-
-#[tokio::main]
-async fn main() {
-    // initialise our server structure
-    let shared_server_state = Arc::new(Mutex::new(ServerState::new("cradle".to_string())));
-     // initialize tracing
-     tracing_subscriber::fmt::init();
-
-     // build our application with a route
-     let app = Router::new()
-        .route("/enqueue", post({
-            let shared_state = Arc::clone(&shared_server_state);
-            move |body| enqueue(body, shared_state)
-        }),
-    );
- 
-     // run our app with hyper
-     // `axum::Server` is a re-export of `hyper::Server`
-     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-     tracing::debug!("listening on {}", addr);
-     axum::Server::bind(&addr)
-         .serve(app.into_make_service())
-         .await
-         .unwrap();
-
+struct AudioServer {
+    current_song: String,
 }
 
-
-// basic handler that responds with a static string
-async fn root() -> &'static str {
-    "Hello, World!"
+impl AudioServer {
+    pub fn new() -> AudioServer {
+        AudioServer {
+            current_song: "Nothing playing".to_string(),
+        }
+    }
+    pub fn play(&mut self, song: String) -> () {
+        println!("Currently playing: {:?}", self.current_song);
+        println!("Starting: {:?}", song);
+        self.current_song = song;
+    }
 }
 
-async fn create_user(
-    // this argument tells axum to parse the request body
-    // as JSON into a `CreateUser` type
-    Json(payload): Json<CreateUser>,
-) -> impl IntoResponse {
-    // insert your application logic here
-    let user = User {
-        id: 1337,
-        username: payload.username,
-    };
+fn start_protocol_server() {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            // initialise our server structure
+            let audio_server = Arc::new(Mutex::new(AudioServer::new()));
+            let protocol_server = Arc::new(Mutex::new(ProtocolServer::new(
+                "cradle".to_string(),
+                Arc::clone(&audio_server),
+            )));
 
-    // this will be converted into a JSON response
-    // with a status code of `201 Created`
-    (StatusCode::CREATED, Json(user))
+            // initialize tracing
+            tracing_subscriber::fmt::init();
+
+            // build our application with a route
+            let app = Router::new().route(
+                "/enqueue",
+                post({
+                    let shared_state = Arc::clone(&protocol_server);
+                    move |body| enqueue(body, shared_state)
+                }),
+            );
+            // Start the audio server
+
+            // run our app with hyper
+            // `axum::Server` is a re-export of `hyper::Server`
+            let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+            tracing::debug!("listening on {}", addr);
+            axum::Server::bind(&addr)
+                .serve(app.into_make_service())
+                .await
+                .unwrap();
+        })
 }
 
-// the input to our `create_user` handler
-#[derive(Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// the output to our `create_user` handler
-#[derive(Serialize)]
-struct User {
-    id: u64,
-    username: String,
+fn main() {
+    start_protocol_server();
 }
