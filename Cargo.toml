@@ -1,0 +1,27 @@
+[package]
+name = "cradle"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "libcradle"
+path = "libcradle/libcradle.rs"
+
+[[bin]]
+name = "cradle-server"
+path = "server/bin.rs"
+
+[[bin]]
+name = "cradle-client"
+path = "client/bin.rs"
+
+[dependencies]
+reqwest = { version = "0.11", features = ["json"] }
+axum = "0.6.1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }
