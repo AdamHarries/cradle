@@ -11,11 +11,19 @@ path = "libcradle/libcradle.rs"
 
 [[bin]]
 name = "cradle-server"
-path = "server/bin.rs"
+path = "cradle/server.rs"
 
 [[bin]]
 name = "cradle-client"
-path = "client/bin.rs"
+path = "cradle/client.rs"
+
+[[bin]]
+name = "playsong"
+path = "cradle/playsong.rs"
+
+[[bin]]
+name = "devicemonitor"
+path = "cradle/devicemonitor.rs"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
@@ -25,3 +33,7 @@ tracing-subscriber = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
+clap = { version = "4.0.32", features = ["derive"] }
+gstreamer = "0.19.4"
+gstreamer-audio = "0.19.4"
+glib = { version = "0.16.7", features = ["v2_66", "compiletests", "log", "log_macros"] }

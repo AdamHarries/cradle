@@ -1,11 +1,11 @@
 use ::libcradle::protocol;
-use axum::http::response;
+// use axum::http::response;
 
 use reqwest;
-use reqwest::IntoUrl;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
-use std::collections::HashMap;
+// use reqwest::IntoUrl;
+// use serde::de::DeserializeOwned;
+// use serde::Serialize;
+// use std::collections::HashMap;
 
 async fn play_song<T: ToString>(
     client: &reqwest::Client,
@@ -25,13 +25,13 @@ async fn play_song<T: ToString>(
     Ok(())
 }
 
-async fn send_command<U: IntoUrl, T: Serialize + ?Sized, R: DeserializeOwned>(
-    client: &reqwest::Client,
-    url: U,
-    data: &T,
-) -> Result<R, reqwest::Error> {
-    client.post(url).json(data).send().await?.json::<R>().await
-}
+// async fn send_command<U: IntoUrl, T: Serialize + ?Sized, R: DeserializeOwned>(
+//     client: &reqwest::Client,
+//     url: U,
+//     data: &T,
+// ) -> Result<R, reqwest::Error> {
+//     client.post(url).json(data).send().await?.json::<R>().await
+// }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
