@@ -17,6 +17,30 @@ enum Messages {
     Done,
 }
 
+fn print_device(device: &gstreamer::Device) -> () {
+    println!("Device added:");
+    println!("\tDisplay name: {:?}", device.display_name());
+    println!("\tClass: {:?}", device.device_class());
+}
+
+pub fn get_audio_sink() -> Option<gstreamer::Element> {
+    let monitor = gstreamer::DeviceMonitor::new();
+    monitor.add_filter(Some("Audio/Sink"), None);
+    monitor.set_show_all(false);
+    monitor.start().unwrap();
+    let sink_devices = monitor.devices();
+    sink_devices.iter().for_each(|device| {
+        print_device(device);
+    });
+    let sink = sink_devices
+        .iter()
+        .map(|device| device.create_element(None).unwrap())
+        .skip(1).next();
+
+    monitor.stop();
+    sink
+}
+
 fn main() -> () {
     let cli = Cli::parse();
     println!("Parsed arguments: {:?}", cli);
@@ -44,6 +68,10 @@ fn main() -> () {
         .build()
         .expect("Failed to build flags");
     playbin.set_property_from_value("flags", &flags);
+
+    let new_sink = get_audio_sink().expect("Could not create sink from device");
+
+    playbin.set_property("audio-sink", &new_sink);
 
     // create a glib communication channel
     let (main_tx, main_rx): (glib::Sender<Messages>, glib::Receiver<Messages>) =
@@ -111,7 +139,9 @@ fn main() -> () {
     );
 
     mainloop.run();
-    playbin.set_state(gstreamer::State::Null).expect("Unable to set the pipeline to the `Null` state");
+    playbin
+        .set_state(gstreamer::State::Null)
+        .expect("Unable to set the pipeline to the `Null` state");
 
     println!("Played a song!");
 }

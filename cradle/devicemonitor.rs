@@ -21,10 +21,11 @@ fn main() {
     gstreamer::init().expect("Unable to initialise gstreamer!");
 
     let devicemonitor = gstreamer::DeviceMonitor::new();
+    devicemonitor.add_filter(Some("Audio/Sink"), None);
     devicemonitor.set_show_all_devices(false);
     devicemonitor.set_show_all(false);
 
-    let (main_tx, main_rx): (glib::Sender<Messages>, glib::Receiver<Messages>) =
+    let (main_tx, _): (glib::Sender<Messages>, glib::Receiver<Messages>) =
         MainContext::channel(PRIORITY_HIGH);
 
     devicemonitor
@@ -54,22 +55,5 @@ fn main() {
         .start()
         .expect("Failed to start devicemonitor!");
 
-    
-
     mainloop.run();
-
-    // playbin
-    //     .bus()
-    //     .expect("Failed to get GStreamer message bus")
-    //     .add_watch(glib::clone!(@strong main_tx => move |_bus, msg| {
-    //         match msg.view() {
-    //             gstreamer::MessageView::Eos(_) =>
-    //                 main_tx.send(Messages::Done).expect("Unable to send message to main()"),
-    //             gstreamer::MessageView::Error(e) =>
-    //                 glib::g_debug!("song", "{}", e.error()),
-    //                 _ => (),
-    //         }
-    //         glib::Continue(true)
-    //     }))
-    //     .expect("Failed to connect to GStreamer message bus");
 }
