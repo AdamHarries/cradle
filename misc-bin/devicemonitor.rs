@@ -1,15 +1,15 @@
 // use clap::Parser;
 
 use glib::{ffi::g_idle_add, source::Priority, FlagsClass, MainContext, ObjectExt, PRIORITY_HIGH};
-use gstreamer::prelude::*;
+use gst::prelude::*;
 use std::path::PathBuf;
 
 enum Messages {
     Done,
 }
 
-fn print_device(device: &gstreamer::Device) -> () { 
-    println!("Device added:");;
+fn print_device(device: &gst::Device) -> () {
+    println!("Device added:");
     println!("\tDisplay name: {:?}", device.display_name());
     println!("\tClass: {:?}", device.device_class());
 }
@@ -18,9 +18,9 @@ fn main() {
     let ctx = glib::MainContext::default();
     let _guard = ctx.acquire();
     let mainloop = glib::MainLoop::new(Some(&ctx), false);
-    gstreamer::init().expect("Unable to initialise gstreamer!");
+    gst::init().expect("Unable to initialise gstreamer!");
 
-    let devicemonitor = gstreamer::DeviceMonitor::new();
+    let devicemonitor = gst::DeviceMonitor::new();
     devicemonitor.add_filter(Some("Audio/Sink"), None);
     devicemonitor.set_show_all_devices(false);
     devicemonitor.set_show_all(false);
@@ -32,7 +32,7 @@ fn main() {
         .bus()
         .add_watch(glib::clone!(@strong main_tx => move |_bus, msg| {
             match msg.view() {
-                gstreamer::MessageView::DeviceAdded(device_added) => {
+                gst::MessageView::DeviceAdded(device_added) => {
                     print_device(&device_added.device());
                 },
                 _ => {},

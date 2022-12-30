@@ -3,27 +3,34 @@ name = "cradle"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["symphonia_metadata"]
+symphonia_metadata = ["dep:symphonia"]
+# Future possible features might include symphonia decoding, and alternative playback mechanisms
 
 [lib]
 name = "libcradle"
 path = "libcradle/libcradle.rs"
 
 [[bin]]
+name = "cradle"
+path = "cradle/cradle.rs"
+
+[[bin]]
 name = "cradle-server"
-path = "cradle/server.rs"
+path = "misc-bin/server-bin.rs"
 
 [[bin]]
 name = "cradle-client"
-path = "cradle/client.rs"
+path = "misc-bin/client-bin.rs"
 
 [[bin]]
 name = "playsong"
-path = "cradle/playsong.rs"
+path = "misc-bin/playsong.rs"
 
 [[bin]]
 name = "devicemonitor"
-path = "cradle/devicemonitor.rs"
+path = "misc-bin/devicemonitor.rs"
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
@@ -34,6 +41,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 clap = { version = "4.0.32", features = ["derive"] }
-gstreamer = "0.19.4"
-gstreamer-audio = "0.19.4"
+gst = { package = "gstreamer", version = "0.19.4" }
+gst-audio = { package = "gstreamer-audio", version = "0.19.4" }
 glib = { version = "0.16.7", features = ["v2_66", "compiletests", "log", "log_macros"] }
+anyhow = "1.0.68"
+thiserror = "1.0.38"
+tempfile = "3.3.0"
+symphonia = { version = "0.5.1", optional = true }
+

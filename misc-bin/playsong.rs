@@ -1,7 +1,7 @@
 use clap::Parser;
 
 use glib::{source::Priority, FlagsClass, MainContext, ObjectExt, PRIORITY_HIGH};
-use gstreamer::prelude::*;
+use gst::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -17,14 +17,14 @@ enum Messages {
     Done,
 }
 
-fn print_device(device: &gstreamer::Device) -> () {
+fn print_device(device: &gst::Device) -> () {
     println!("Device added:");
     println!("\tDisplay name: {:?}", device.display_name());
     println!("\tClass: {:?}", device.device_class());
 }
 
-pub fn get_audio_sink() -> Option<gstreamer::Element> {
-    let monitor = gstreamer::DeviceMonitor::new();
+pub fn get_audio_sink() -> Option<gst::Element> {
+    let monitor = gst::DeviceMonitor::new();
     monitor.add_filter(Some("Audio/Sink"), None);
     monitor.set_show_all(false);
     monitor.start().unwrap();
@@ -35,7 +35,8 @@ pub fn get_audio_sink() -> Option<gstreamer::Element> {
     let sink = sink_devices
         .iter()
         .map(|device| device.create_element(None).unwrap())
-        .skip(1).next();
+        .skip(1)
+        .next();
 
     monitor.stop();
     sink
@@ -48,12 +49,12 @@ fn main() -> () {
     let _guard = ctx.acquire();
     let mainloop = glib::MainLoop::new(Some(&ctx), false);
 
-    let mut playbin: gstreamer::Element;
+    let mut playbin: gst::Element;
     // let mut main_tx: glib::Sender<()>;
 
     // soi backend::new
-    gstreamer::init().expect("Unable to initialise GStreamer");
-    let playbin: gstreamer::Element = gstreamer::ElementFactory::make("playbin")
+    gst::init().expect("Unable to initialise GStreamer");
+    let playbin: gst::Element = gst::ElementFactory::make("playbin")
         .build()
         .expect("Unable to create `playbin` element");
 
@@ -83,9 +84,9 @@ fn main() -> () {
         .expect("Failed to get GStreamer message bus")
         .add_watch(glib::clone!(@strong main_tx => move |_bus, msg| {
             match msg.view() {
-                gstreamer::MessageView::Eos(_) =>
+                gst::MessageView::Eos(_) =>
                     main_tx.send(Messages::Done).expect("Unable to send message to main()"),
-                gstreamer::MessageView::Error(e) =>
+                gst::MessageView::Error(e) =>
                     glib::g_debug!("song", "{}", e.error()),
                     _ => (),
             }
@@ -109,7 +110,7 @@ fn main() -> () {
 
     // play a song!
     playbin
-        .set_state(gstreamer::State::Ready)
+        .set_state(gst::State::Ready)
         .expect("Could not set ready state");
     let path = cli.track_path.as_path();
     let path_string = glib::filename_to_uri(path, None)
@@ -117,7 +118,7 @@ fn main() -> () {
         .to_string();
     playbin.set_property("uri", path_string);
     playbin
-        .set_state(gstreamer::State::Playing)
+        .set_state(gst::State::Playing)
         .expect("Failed to start playback");
     // main_tx
     //     .send(Messages::Done)
@@ -140,7 +141,7 @@ fn main() -> () {
 
     mainloop.run();
     playbin
-        .set_state(gstreamer::State::Null)
+        .set_state(gst::State::Null)
         .expect("Unable to set the pipeline to the `Null` state");
 
     println!("Played a song!");
