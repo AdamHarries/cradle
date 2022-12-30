@@ -36,4 +36,4 @@ tokio = { version = "1", features = ["full"] }
 clap = { version = "4.0.32", features = ["derive"] }
 gstreamer = "0.19.4"
 gstreamer-audio = "0.19.4"
-glib = { version = "0.16.7", features = ["v2_66", "compiletests", "log", "log_macros"] }
+glib = { version = "0.16.7", features = ["v2_64", "compiletests", "log", "log_macros"] }
